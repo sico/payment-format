@@ -86,8 +86,86 @@ function (PaymentFormat) {
       expect( PaymentFormat.validateCardNumber('3566002020360505') ).toBe( true );
 		});
 
-
-
 	});
+
+describe('Validating a CVC', function () {
+	it('should fail if it is empty', function () {
+		expect( PaymentFormat.validateCardCVC('') ).toBe( false );
+	});
+
+	it('should pass if it is valid', function () {
+		expect( PaymentFormat.validateCardCVC('123') ).toBe( true );
+	});
+
+	it('should fail with non-digits', function () {
+		expect( PaymentFormat.validateCardCVC('12e') ).toBe( false );
+	});
+
+	it('should fail with fewer than 3 digits', function () {
+		expect( PaymentFormat.validateCardCVC('12') ).toBe( false );
+	});
+
+	it('should fail with more than 4 digits', function () {
+		expect( PaymentFormat.validateCardCVC('12345') ).toBe( false );
+	});
+
+});
+
+describe('Validating an expiration date', function () {
+
+	var currentTime;
+	beforeEach(function() {
+    currentTime = new Date();
+  });
+
+	it('should fail if expires is before the current year', function () {
+		expect( PaymentFormat.validateCardExpiry(currentTime.getMonth() + 1, currentTime.getFullYear() - 1)).toBe( false );
+	});
+
+	it('should fail if expires in the current year but before current month', function () {
+		expect( PaymentFormat.validateCardExpiry(currentTime.getMonth(), currentTime.getFullYear())).toBe( false );
+	});
+
+	it('should fail with invalid month', function () {
+		expect( PaymentFormat.validateCardExpiry(13, currentTime.getFullYear())).toBe( false );
+	});
+
+	it('should succeed for this year and month', function () {
+		expect( PaymentFormat.validateCardExpiry(currentTime.getMonth() + 1, currentTime.getFullYear())).toBe( true );
+	});
+
+	it('should pass for the next month', function () {
+		expect( PaymentFormat.validateCardExpiry(currentTime.getMonth() + 1, currentTime.getFullYear())).toBe( true );
+	});
+
+	it('should pass for the next year', function () {
+		expect( PaymentFormat.validateCardExpiry(currentTime.getMonth() + 1, currentTime.getFullYear() + 1)).toBe( true );
+	});
+
+	it('should pass for a two digit year', function () {
+		expect( PaymentFormat.validateCardExpiry(currentTime.getMonth() + 1, ('' + currentTime.getFullYear()).slice(0,2)) ).toBe( true );
+	});
+
+	it('should fail for a two digit year in the past', function () {
+		expect( PaymentFormat.validateCardExpiry(currentTime.getMonth() + 1, 99)).toBe( false );
+	});
+
+	it('should pass with string numbers', function () {
+		currentTime.setFullYear(currentTime.getFullYear() + 1, currentTime.getMonth() + 2)
+		expect( PaymentFormat.validateCardExpiry(currentTime.getMonth() + 1 + '', currentTime.getFullYear() + '')).toBe( true );
+	});
+
+	it('should fail for non-numbers', function () {
+		expect( PaymentFormat.validateCardExpiry('h12', '3300')).toBe( false );
+	});
+
+	it('should fail if year or month is NaN', function () {
+		expect( PaymentFormat.validateCardExpiry('12', NaN)).toBe( false );
+	});
+
+	it('should support year shorthand', function () {
+		expect( PaymentFormat.validateCardExpiry('05', '20')).toBe( true );
+	});
+})
 
 });

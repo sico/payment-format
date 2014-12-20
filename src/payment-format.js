@@ -89,7 +89,7 @@ function () {
 	function cardFromNumber (num) {
     num = (num + '').replace(/\D/g, '');
     for ( var i = 0; i < cards.length; i++) {
-      card = cards[i];
+      var card = cards[i];
       if (card.pattern.test(num)) {
         return card;
       }
@@ -98,7 +98,7 @@ function () {
 
   function cardFromType (type) {
     for (var i = 0; i < cards.length; i++) {
-      card = cards[i];
+      var card = cards[i];
       if (card.type === type) {
         return card;
       }
@@ -140,7 +140,62 @@ function () {
 	  return (card.length.indexOf(num.length) >= 0) && (card.luhn === false || luhnCheck(num));
 	};
 
+	function validateCardCVC (cvc, type) {
+    cvc = cvc.replace(/\s+/g, '');
+
+    if (!/^\d+$/.test(cvc)) {
+      return false;
+    }
+
+    var card = cardFromType(type);
+
+    if (card != null) {
+      return card.cvcLength.indexOf(cvc.length) >= 0;
+    } else {
+      return cvc.length >= 3 && cvc.length <= 4;
+    }
+	};
+
+	function validateCardExpiry (month, year) {
+		var currentTime, expiry, _ref;
+    if (typeof month === 'object' && 'month' in month) {
+      _ref = month, month = _ref.month, year = _ref.year;
+    }
+    if (!(month && year)) {
+      return false;
+    }
+
+    month = (month + '').replace(/\s+/g, '');
+    year = (year + '').replace(/\s+/g, '');
+    if (!/^\d+$/.test(month)) {
+      return false;
+    }
+    if (!/^\d+$/.test(year)) {
+      return false;
+    }
+    if (!((1 <= month && month <= 12))) {
+      return false;
+    }
+    if (year.length === 2) {
+      if (year < 70) {
+        year = "20" + year;
+      } else {
+        year = "19" + year;
+      }
+    }
+    if (year.length !== 4) {
+      return false;
+    }
+    expiry = new Date(year, month);
+    currentTime = new Date;
+    expiry.setMonth(expiry.getMonth() - 1);
+    expiry.setMonth(expiry.getMonth() + 1, 1);
+    return expiry > currentTime;
+	}
+
 	return {
-		validateCardNumber: validateCardNumber
+		validateCardNumber: validateCardNumber,
+		validateCardCVC: validateCardCVC,
+		validateCardExpiry: validateCardExpiry
 	}
 })
