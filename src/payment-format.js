@@ -86,6 +86,156 @@ function () {
 	    }
 	  ];
 
+	function hasTextSelected(target) {
+    var _ref;
+    if ((target.selectionStart != null) && target.selectionStart !== target.selectionEnd) {
+      return true;
+    }
+
+    if (typeof document !== "undefined" && document !== null ? (_ref = document.selection) != null ? typeof _ref.createRange === "function" ? _ref.createRange().text : void 0 : void 0 : void 0) {
+      return true;
+    }
+
+    return false;
+  };
+
+  function restrictCardNumber (e) {
+    var target, card, digit, value;
+    target = e.target;
+    digit = String.fromCharCode(e.which);
+    if (!/^\d+$/.test(digit)) {
+      return;
+    }
+    if (hasTextSelected(target)) {
+      return;
+    }
+    value = (target.value + digit).replace(/\D/g, '');
+    card = cardFromNumber(value);
+    if (card) {
+      return value.length <= card.length[card.length.length - 1];
+    } else {
+      return value.length <= 16;
+    }
+  };
+
+  function formatCardNumber (num) {
+  	var card, groups, upperLength, _ref;
+    card = cardFromNumber(num);
+    if (!card) {
+			return num;
+    }
+    upperLength = card.length[card.length.length - 1];
+    num = num.replace(/\D/g, '');
+    num = num.slice(0, upperLength);
+    if (card.format.global) {
+      return (_ref = num.match(card.format)) != null ? _ref.join(' ') : void 0;
+    } else {
+      groups = card.format.exec(num);
+      if (groups == null) {
+        return;
+      }
+      groups.shift();
+      groups = groups.filter(function(n) {
+        return n;
+      });
+      return groups.join(' ');
+    }
+  }
+
+  function formatCardNumberInput (e) {
+    var target, card, digit, length, re, upperLength, value;
+    digit = String.fromCharCode(e.which);
+    if (!/^\d+$/.test(digit)) {
+      return;
+    }
+    target = e.target;
+    value = target.value;
+    card = cardFromNumber(value + digit);
+    length = (value.replace(/\D/g, '') + digit).length;
+    upperLength = 16;
+    if (card) {
+      upperLength = card.length[card.length.length - 1];
+    }
+    if (length >= upperLength) {
+      return;
+    }
+    if ((target.selectionStart != null) && target.selectionStart !== value.length) {
+      return;
+    }
+    if (card && card.type === 'amex') {
+      re = /^(\d{4}|\d{4}\s\d{6})$/;
+    } else {
+      re = /(?:^|\s)(\d{4})$/;
+    }
+    if (re.test(value)) {
+      e.preventDefault();
+      return setTimeout(function() {
+        return target.value = value + ' ' + digit;
+      });
+    } else if (re.test(value + digit)) {
+      e.preventDefault();
+      return setTimeout(function() {
+        return target.value = value + digit + ' ';
+      });
+    }
+  };
+
+	function formatBackCardNumber (e) {
+    var target, value;
+    target = e.target;
+    value = target.value;
+    if (e.which !== 8) {
+      return;
+    }
+    if ((target.selectionStart != null) && target.selectionStart !== value.length) {
+      return;
+    }
+    if (/\d\s$/.test(value)) {
+      e.preventDefault();
+      return setTimeout(function() {
+        return target.value = value.replace(/\d\s$/, '');
+      });
+    } else if (/\s\d?$/.test(value)) {
+      e.preventDefault();
+      return setTimeout(function() {
+        return target.value = value.replace(/\s\d?$/, '');
+      });
+    }
+  };
+
+  function reFormatCardNumber (e) {
+    return setTimeout(function() {
+      var target, value;
+      target = e.target;
+      value = target.value;
+      value = formatCardNumber(value);
+      target.value = value;
+    });
+  };
+
+  function setCardType (e) {
+    var target, allTypes, card, cardType, val;
+    target = e.target;
+    val = target.value;
+    cardType = cardType(val) || 'unknown';
+    if (!target.classList.contains(cardType)) {
+      allTypes = (function() {
+        var _i, _len, _results;
+        _results = [];
+        for (_i = 0, _len = cards.length; _i < _len; _i++) {
+          card = cards[_i];
+          _results.push(card.type);
+        }
+        return _results;
+      })();
+      target.removeClass('unknown');
+      target.removeClass(allTypes.join(' '));
+      target.addClass(cardType);
+      target.toggleClass('identified', cardType !== 'unknown');
+      //return target.trigger('payment.cardType', cardType);
+    }
+  };
+
 	function cardFromNumber (num) {
     num = (num + '').replace(/\D/g, '');
     for ( var i = 0; i < cards.length; i++) {
@@ -193,9 +343,35 @@ function () {
     return expiry > currentTime;
 	}
 
+	function cardType (num) {
+		var _ref;
+    if (!num) {
+      return null;
+    }
+    return ((_ref = cardFromNumber(num)) != null ? _ref.type : void 0) || null;
+	}
+
+	function makeCardFormatter (el) {
+		el.addEventListener('keypress', restrictCardNumber);
+		el.addEventListener('keypress', formatCardNumberInput);
+		el.addEventListener('keydown', formatBackCardNumber);
+		//el.addEventListener('keyUp', setCardType);
+		el.addEventListener('paste', reFormatCardNumber);
+		el.addEventListener('change', reFormatCardNumber);
+		el.addEventListener('input', reFormatCardNumber);
+		// el.addEventListener('input', setCardType);
+	}
+
+	function makeExpiryFormatter (el) {
+
+	}
+
 	return {
 		validateCardNumber: validateCardNumber,
 		validateCardCVC: validateCardCVC,
-		validateCardExpiry: validateCardExpiry
+		validateCardExpiry: validateCardExpiry,
+		cardType: cardType,
+		makeCardFormatter: makeCardFormatter,
+		makeExpiryFormatter: makeExpiryFormatter
 	}
 })
