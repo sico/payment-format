@@ -306,6 +306,14 @@ function () {
     }
 	};
 
+	function cardType (num) {
+		var _ref;
+    if (!num) {
+      return null;
+    }
+    return ((_ref = cardFromNumber(num)) != null ? _ref.type : void 0) || null;
+	}
+
 	function validateCardExpiry (month, year) {
 		var currentTime, expiry, _ref;
     if (typeof month === 'object' && 'month' in month) {
@@ -343,27 +351,166 @@ function () {
     return expiry > currentTime;
 	}
 
-	function cardType (num) {
-		var _ref;
-    if (!num) {
-      return null;
+	// expiry methods
+
+	function restrictExpiry (e) {
+		var target, digit, value;
+		target = e.target;
+		digit = String.fromCharCode(e.which);
+		if (!/^\d+$/.test(digit)) {
+		  return;
+		}
+		if (hasTextSelected(target)) {
+		  return;
+		}
+		value = target.value + digit;
+		value = value.replace(/\D/g, '');
+		if (value.length > 6) {
+		  return false;
+		}
+	};
+
+	function reFormatExpiry (e) {
+    return setTimeout(function() {
+      var target, value;
+      target = e.target;
+      value = target.value;
+      value = formatExpiry(value);
+      return target.value = value;
+    });
+  };
+
+  function formatExpiryInput (e) {
+    var target, digit, val;
+    digit = String.fromCharCode(e.which);
+    if (!/^\d+$/.test(digit)) {
+      return;
     }
-    return ((_ref = cardFromNumber(num)) != null ? _ref.type : void 0) || null;
-	}
+    target = e.target;
+    val = target.value + digit;
+    if (/^\d$/.test(val) && (val !== '0' && val !== '1')) {
+      e.preventDefault();
+      return setTimeout(function() {
+        return target.value = "0" + val + " / ";
+      });
+    } else if (/^\d\d$/.test(val)) {
+      e.preventDefault();
+      return setTimeout(function() {
+        return target.value = "" + val + " / ";
+      });
+    }
+  };
+
+  function formatForwardExpiry (e) {
+    var target, digit, val;
+    digit = String.fromCharCode(e.which);
+    if (!/^\d+$/.test(digit)) {
+      return;
+    }
+    target = e.target;
+    val = target.value;
+    if (/^\d\d$/.test(val)) {
+      return target.value = "" + val + " / ";
+    }
+  };
+
+  function formatForwardSlashAndSpace (e) {
+    var target, val, which;
+    which = String.fromCharCode(e.which);
+    if (!(which === '/' || which === ' ')) {
+      return;
+    }
+    target = e.target;
+    val = target.value;
+    if (/^\d$/.test(val) && val !== '0') {
+      return target.value = "0" + val + " / ";
+    }
+  };
+
+  function formatBackExpiry (e) {
+    var target, value;
+    target = e.target;
+    value = target.value;
+    if (e.which !== 8) {
+      return;
+    }
+    if ((target.selectionStart != null) && target.selectionStart !== value.length) {
+      return;
+    }
+    if (/\s\/\s\d?$/.test(value)) {
+      e.preventDefault();
+      return setTimeout(function() {
+        return target.value = value.replace(/\s\/\s\d?$/, '');
+      });
+    }
+  };
+
+  function formatExpiry (expiry) {
+    var mon, parts, sep, year;
+    parts = expiry.match(/^\D*(\d{1,2})(\D+)?(\d{1,4})?/);
+    if (!parts) {
+      return '';
+    }
+    mon = parts[1] || '';
+    sep = parts[2] || '';
+    year = parts[3] || '';
+    if (year.length > 0 || (sep.length > 0 && !(/\ \/?\ ?/.test(sep)))) {
+      sep = ' / ';
+    }
+    if (mon.length === 1 && (mon !== '0' && mon !== '1')) {
+      mon = "0" + mon;
+      sep = ' / ';
+    }
+    return mon + sep + year;
+  };
+
+  function restrictNumeric (e) {
+    var input;
+    if (e.metaKey || e.ctrlKey) {
+      return true;
+    }
+    if (e.which === 32) {
+      return false;
+    }
+    if (e.which === 0) {
+      return true;
+    }
+    if (e.which < 33) {
+      return true;
+    }
+    input = String.fromCharCode(e.which);
+    return !!/[\d\s]/.test(input);
+  };
+
+	// add events
 
 	function makeCardFormatter (el) {
+		makeNumericOnly(el);
+
 		el.addEventListener('keypress', restrictCardNumber);
 		el.addEventListener('keypress', formatCardNumberInput);
 		el.addEventListener('keydown', formatBackCardNumber);
-		//el.addEventListener('keyUp', setCardType);
+		el.addEventListener('keyUp', setCardType);
 		el.addEventListener('paste', reFormatCardNumber);
 		el.addEventListener('change', reFormatCardNumber);
 		el.addEventListener('input', reFormatCardNumber);
-		// el.addEventListener('input', setCardType);
+		el.addEventListener('input', setCardType);
 	}
 
 	function makeExpiryFormatter (el) {
+		makeNumericOnly(el);
+		el.addEventListener('keypress', restrictExpiry);
+		el.addEventListener('keypress', formatExpiryInput);
+		el.addEventListener('keypress', formatForwardSlashAndSpace);
+		el.addEventListener('keypress', formatForwardExpiry);
+		el.addEventListener('keydown', formatBackExpiry);
+		el.addEventListener('change', reFormatExpiry);
+		el.addEventListener('input', reFormatExpiry);
+		return this;
+	}
 
+	function makeNumericOnly (el) {
+		el.addEventListener('keypress', restrictNumeric);
 	}
 
 	return {
