@@ -3,15 +3,16 @@
   // Project configuration.
   grunt.initConfig({
     pkg: grunt.file.readJSON('package.json'),
-    uglify: {
-      options: {
-        banner: '/*! <%= pkg.name %> <%= grunt.template.today("yyyy-mm-dd") %> */\n'
-      },
-      build: {
-        src: 'src/<%= pkg.name %>.js',
-        dest: 'build/<%= pkg.name %>.min.js'
-      }
-    },
+		requirejs: {
+			compile: {
+				options: {
+					almond: true,
+					baseUrl: 'src',
+					dir: 'build',
+					optimize: 'uglify'
+				}
+			}
+		},
     jasmine : {
       src : 'src/**/*.js',
       options : {
@@ -36,14 +37,13 @@
     }
   });
 
-  // Load the plugin that provides the "uglify" task.
-  grunt.loadNpmTasks('grunt-contrib-uglify');
+  grunt.loadNpmTasks('grunt-contrib-requirejs');
 
   // Load Jasmine
   grunt.loadNpmTasks('grunt-contrib-jasmine');
 
   // Default task(s).
-  grunt.registerTask('default', ['uglify']);
+  grunt.registerTask('default', ['requirejs:compile']);
   grunt.registerTask('test', ['jasmine']);
 
 };

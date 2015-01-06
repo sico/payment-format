@@ -490,11 +490,11 @@ function () {
 		el.addEventListener('keypress', restrictCardNumber);
 		el.addEventListener('keypress', formatCardNumberInput);
 		el.addEventListener('keydown', formatBackCardNumber);
-		el.addEventListener('keyUp', setCardType);
+		//el.addEventListener('keyUp', setCardType);
 		el.addEventListener('paste', reFormatCardNumber);
 		el.addEventListener('change', reFormatCardNumber);
 		el.addEventListener('input', reFormatCardNumber);
-		el.addEventListener('input', setCardType);
+		//el.addEventListener('input', setCardType);
 	}
 
 	function makeExpiryFormatter (el) {
